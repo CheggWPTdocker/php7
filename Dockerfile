@@ -36,6 +36,11 @@ RUN	apk --update --no-cache add \
 # Add the files
 COPY container_confs /
 
+# Add the www-data user and group, fail on error
+RUN set -x ; \
+	addgroup -g 82 -S www-data ; \
+	adduser -u 82 -D -S -G www-data www-data && exit 0 ; exit 1 
+
 # dont display errors 	sed -i -e 's/display_errors = Off/display_errors = On/g' /etc/php7/php.ini && \
 # fix path off
 # error log becomes stderr
