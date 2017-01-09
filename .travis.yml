@@ -1,0 +1,17 @@
+sudo: required
+
+services:
+  - docker
+
+language: node_js
+
+node_js:
+  - "6"
+
+install:
+  - npm install -g dockerlint
+
+script: 
+  - dockerlint Dockerfile
+  - docker build .
+
