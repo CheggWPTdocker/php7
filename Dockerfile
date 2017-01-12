@@ -72,6 +72,3 @@ RUN cd /tmp && \
 
 # Expose the ports for nginx
 EXPOSE 9000
-
-ENTRYPOINT ["/entrypoint.sh"]
-CMD ["supervisor"]
