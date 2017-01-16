@@ -1,7 +1,7 @@
 FROM cheggwpt/alpine:edge
 
 RUN	apk --update --no-cache add \
-	--virtual .build_package git curl php7-dev build-base autoconf \
+	--virtual .build_package git curl php7-dev file build-base autoconf \
 	--virtual .php_service \
 		mysql-client \
 		php7 \
@@ -31,7 +31,8 @@ RUN	apk --update --no-cache add \
 		php7-xmlreader \
 		php7-xmlrpc \
 		php7-zip \
-		--virtual .redis_tools hiredis hiredis-dev 
+	--virtual .redis_tools hiredis hiredis-dev
+
 
 # Add the files
 COPY container_confs /
@@ -39,7 +40,7 @@ COPY container_confs /
 # Add the www-data user and group, fail on error
 RUN set -x ; \
 	addgroup -g 82 -S www-data ; \
-	adduser -u 82 -D -S -G www-data www-data && exit 0 ; exit 1 
+	adduser -u 82 -D -S -G www-data www-data && exit 0 ; exit 1
 
 # dont display errors 	sed -i -e 's/display_errors = Off/display_errors = On/g' /etc/php7/php.ini && \
 # fix path off
@@ -54,21 +55,34 @@ RUN	sed -i -e 's/;cgi.fix_pathinfo=1/cgi.fix_pathinfo=0/g' /etc/php7/php.ini && 
 # own up the webroot dir
 # make it user/group read write
 RUN ln -s /usr/bin/php7 /usr/bin/php && \
+	ln -s /usr/bin/php-config7 /usr/bin/php-config && \
+	ln -s /usr/bin/phpize7 /usr/bin/phpize && \
 	mkdir -p /run/php && \
-	chown -R www-data:www-data /run/php 
+	chown -R www-data:www-data /run/php
 
 # build phpiredis
 RUN cd /tmp && \
 	git clone https://github.com/nrk/phpiredis.git phpiredis && \
 	cd phpiredis && \
-	ln -s /usr/bin/php-config7 /usr/bin/php-config && \
-	/usr/bin/phpize7 && \
+	phpize && \
 	./configure && \
-	make && \
-	make install && \
+	make && make install && \
 	echo 'extension=phpiredis.so' > /etc/php7/conf.d/33-phpiredis.ini && \
 	cd /tmp && \
-	rm -rf phpiredis /var/cache/apk/* 
+	rm -rf phpiredis
+
+# Build tideways
+RUN cd /tmp && \
+	git clone https://github.com/tideways/php-profiler-extension.git && \
+	cd php-profiler-extension && \
+	phpize && \
+	./configure && \
+	make && make install && \
+	echo 'extension=tideways.so' > /etc/php7/conf.d/01_tideways.ini && \
+	php -m && php --ini && \
+	cd /tmp && rm -rf php-profiler-extension
+
+RUN rm -rf /var/cache/apk/*
 
 # Expose the ports for nginx
 EXPOSE 9000
