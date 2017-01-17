@@ -73,16 +73,25 @@ RUN cd /tmp && \
 	cd /tmp && \
 	rm -rf phpiredis
 
-# Build tideways
+ENV tideways_ext_version 4.0.7
+ENV tideways_php_version 2.0.14
+ENV tideways_dl https://github.com/tideways/
+
+# Build & install ext/tideways & Tideways.php
 RUN cd /tmp && \
-	git clone https://github.com/tideways/php-profiler-extension.git && \
-	cd php-profiler-extension && \
+	curl -L "${tideways_dl}/php-profiler-extension/archive/v${tideways_ext_version}.zip" \
+    --output "/tmp/v${tideways_ext_version}.zip" && \
+	cd /tmp && unzip "v${tideways_ext_version}.zip" && \
+	cd "php-profiler-extension-${tideways_ext_version}" && \
 	phpize && \
 	./configure && \
 	make && make install && \
-	echo 'extension=tideways.so' > /etc/php7/conf.d/01_tideways.ini && \
+	echo 'extension=tideways.so' > "${php_ini_dir}/22_tideways.ini" && \
+    curl -L "${tideways_dl}/profiler/releases/download/v${tideways_php_version}/Tideways.php" \
+	--output "$(php-config --extension-dir)/Tideways.php" && \
 	php -m && php --ini && \
-	cd /tmp && rm -rf php-profiler-extension
+    ls -l "$(php-config --extension-dir)/Tideways.php" && \
+	cd /tmp && rm -rf "v${tideways_ext_version}.zip" php-profiler-extension*
 
 RUN rm -rf /var/cache/apk/*
 
