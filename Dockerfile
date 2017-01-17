@@ -60,6 +60,8 @@ RUN ln -s /usr/bin/php7 /usr/bin/php && \
 	mkdir -p /run/php && \
 	chown -R www-data:www-data /run/php
 
+ENV php_ini_dir /etc/php7/conf.d
+
 # build phpiredis
 RUN cd /tmp && \
 	git clone https://github.com/nrk/phpiredis.git phpiredis && \
@@ -67,7 +69,7 @@ RUN cd /tmp && \
 	phpize && \
 	./configure && \
 	make && make install && \
-	echo 'extension=phpiredis.so' > /etc/php7/conf.d/33-phpiredis.ini && \
+	echo 'extension=phpiredis.so' > "${php_ini_dir}/33-phpiredis.ini" && \
 	cd /tmp && \
 	rm -rf phpiredis
 
