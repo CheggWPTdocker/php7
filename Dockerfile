@@ -37,6 +37,7 @@ RUN apk --update --no-cache add \
 	--virtual .php_service \
 		mysql-client \
 		php7 \
+		php7-apcu \
 		php7-bcmath \
 		php7-bz2 \
 		php7-ctype \

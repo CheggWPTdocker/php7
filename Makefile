@@ -1,5 +1,5 @@
 NAME = cheggwpt/php7
-VERSION = 1.0.2
+VERSION = 1.1.0
 
 .PHONY: all build test tag_latest release ssh
 
@@ -12,7 +12,7 @@ tag_latest:
 	docker tag $(NAME):$(VERSION) $(NAME):latest
 
 run:
-	docker run -p 80:80 --name php -d -t $(NAME):$(VERSION)
+	docker run --name php7 -d --rm -t $(NAME):$(VERSION)
 
 release: tag_latest
 	@if ! docker images $(NAME) | awk '{ print $$2 }' | grep -q -F $(VERSION); then echo "$(NAME) version $(VERSION) is not yet built. Please run 'make build'"; false; fi
