@@ -64,6 +64,7 @@ RUN apk add \
 		php7-soap \
 		php7-session \
 		php7-sqlite3 \
+		php7-tidy \
 		php7-xmlreader \
 		php7-xmlrpc \
 		php7-zip
