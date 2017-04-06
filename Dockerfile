@@ -127,6 +127,17 @@ RUN cd /tmp && \
 	make && make install && \
 	echo 'extension=apcu.so' > "${php_ini_dir}/35_apcu.ini"
 
+# Build & install php7_apcu_BC (Alpine PHP7_apcu_BC DOES NOT EXIST)
+RUN cd /tmp && \
+	curl -fsSL 'http://pecl.php.net/get/apcu_bc-1.0.3.tgz' \
+	--output /tmp/apcu_bc.tgz && \
+	tar -zxvf apcu_bc.tgz && \
+	cd /tmp/apcu_bc-1.0.3 && \
+	phpize && \
+	./configure && \
+	make && make install && \
+	echo 'extension=apc.so' > "${php_ini_dir}/45_apc_bc.ini"
+
 # Build & install php_redis (Alpine PHP7_redis is built to out of date php7 backend)
 RUN cd /tmp && \
 	git clone https://github.com/nrk/phpiredis.git phpiredis && \
