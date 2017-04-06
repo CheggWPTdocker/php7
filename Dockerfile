@@ -29,6 +29,7 @@ RUN	apk add \
 RUN apk add \
 	--virtual .build_libraries \
 		pcre-dev \
+		cyrus-sasl-dev \
 		libmemcached-dev \
 		hiredis-dev \
 		zlib-dev \
@@ -47,6 +48,7 @@ RUN apk add \
 		php7-gd \
 		php7-gettext \
 		php7-gmp \
+		php7-intl \
 		php7-iconv \
 		php7-json \
 		php7-mbstring \
@@ -112,9 +114,7 @@ RUN cd /tmp && \
 	echo 'extension=tideways.so' > "${php_ini_dir}/22_tideways.ini" && \
     curl -L "${tideways_dl}/profiler/releases/download/v${tideways_php_version}/Tideways.php" \
 	--output "$(php-config --extension-dir)/Tideways.php" && \
-	php -m && php --ini && \
-    ls -l "$(php-config --extension-dir)/Tideways.php" && \
-	cd /tmp && rm -rf "v${tideways_ext_version}.zip" php-profiler-extension*
+    ls -l "$(php-config --extension-dir)/Tideways.php"
 
 # Build & install php7_apcu (Alpine PHP7_apcu is built to out of date php7 backend)
 RUN cd /tmp && \
@@ -145,20 +145,32 @@ RUN cd /tmp && \
 	phpize && \
 	./configure && \
 	make && make install && \
-	echo 'extension=phpiredis.so' > "${php_ini_dir}/33-phpiredis.ini" && \
-	cd /tmp && \
-	rm -rf phpiredis
+	echo 'extension=phpiredis.so' > "${php_ini_dir}/33-phpiredis.ini"
+
+# Build & install php7_memcached (Alpine Package is built from old source)
+RUN cd /tmp && \
+	curl -fsSL 'http://pecl.php.net/get/memcached-3.0.3.tgz' \
+	--output /tmp/memcached-3.0.3.tgz && \
+	tar -zxvf memcached-3.0.3.tgz && \
+	cd /tmp/memcached-3.0.3 && \
+	phpize && \
+	./configure && \
+	make && make install && \
+	echo 'extension=memcached.so' > "${php_ini_dir}/35_memcached.ini"
 
 # Build & install php7_memcache (Alpine Package does not exists at this time - source from pecl is blocking)
-RUN cd /tmp && \
-	curl -fsSL 'https://github.com/websupport-sk/pecl-memcache/archive/NON_BLOCKING_IO_php7.zip' \
-	--output /tmp/memcache.zip && \
-	unzip memcache.zip && \
-	cd /tmp/pecl-memcache-NON_BLOCKING_IO_php7 && \
-	phpize && \
-	./configure --enable-memcache && \
-	make && make install && \
-	echo 'extension=memcache.so' > "${php_ini_dir}/35_memcache.ini"
+# RUN cd /tmp && \
+#	curl -fsSL 'https://github.com/websupport-sk/pecl-memcache/archive/NON_BLOCKING_IO_php7.zip' \
+#	--output /tmp/memcache.zip && \
+#	unzip memcache.zip && \
+#	cd /tmp/pecl-memcache-NON_BLOCKING_IO_php7 && \
+#	phpize && \
+#	./configure --enable-memcache && \
+#	make && make install && \
+#	echo 'extension=memcache.so' > "${php_ini_dir}/35_memcache.ini"
+
+# dump some build done info on PHP
+RUN php -m && php --ini
 
 # Clean up the apk cache and tmp just in case
 RUN rm -rf /var/cache/apk/* && \
