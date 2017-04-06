@@ -18,26 +18,26 @@ RUN echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/reposit
 # install ca-certificates
 # clean up the apk cache (no-cache still caches the indexes)
 # update the ca-certificates
-RUN	apk --update --no-cache \
+RUN	apk --update \
 	add bash ca-certificates supervisor && \
-	rm -rf /var/cache/apk/* && \
 	update-ca-certificates
 
-RUN apk --update --no-cache add \
+RUN	apk add \
 	--virtual .build_package \
-	git \
-	curl \
-	php7-dev \
-	file \
-	build-base \
-	autoconf \
-	pcre-dev
+		git curl file build-base autoconf
 
-RUN apk --update --no-cache add \
+RUN apk add \
+	--virtual .build_libraries \
+		pcre-dev \
+		libmemcached-dev \
+		hiredis-dev \
+		zlib-dev \
+		php7-dev
+
+RUN apk add \
 	--virtual .php_service \
 		mysql-client \
 		php7 \
-		php7-apcu \
 		php7-bcmath \
 		php7-bz2 \
 		php7-ctype \
@@ -66,7 +66,7 @@ RUN apk --update --no-cache add \
 		php7-xmlrpc \
 		php7-zip
 
-RUN	apk --update --no-cache add \
+RUN	apk add \
 	--virtual .redis_tools hiredis hiredis-dev
 
 # Add the container config files
@@ -96,18 +96,11 @@ RUN	sed -i -e 's/;cgi.fix_pathinfo=1/cgi.fix_pathinfo=0/g' /etc/php7/php.ini && 
 RUN mkdir -p /run/php && \
 	chown -R www-data:www-data /run/php
 
-# build phpiredis
-RUN cd /tmp && \
-	git clone https://github.com/nrk/phpiredis.git phpiredis && \
-	cd phpiredis && \
-	phpize && \
-	./configure && \
-	make && make install && \
-	echo 'extension=phpiredis.so' > "${php_ini_dir}/33-phpiredis.ini" && \
-	cd /tmp && \
-	rm -rf phpiredis
+#
+# BUILD PHP Extensions that are missing or out of date in alpine edge
+#
 
-# Build & install ext/tideways & Tideways.php
+# Build & install ext/tideways & Tideways.php (props to till)
 RUN cd /tmp && \
 	curl -L "${tideways_dl}/php-profiler-extension/archive/v${tideways_ext_version}.zip" \
     --output "/tmp/v${tideways_ext_version}.zip" && \
@@ -122,6 +115,39 @@ RUN cd /tmp && \
 	php -m && php --ini && \
     ls -l "$(php-config --extension-dir)/Tideways.php" && \
 	cd /tmp && rm -rf "v${tideways_ext_version}.zip" php-profiler-extension*
+
+# Build & install php7_apcu (Alpine PHP7_apcu is built to out of date php7 backend)
+RUN cd /tmp && \
+	curl -fsSL 'http://pecl.php.net/get/apcu-5.1.8.tgz' \
+	--output /tmp/apcu.tgz && \
+	tar -zxvf apcu.tgz && \
+	cd /tmp/apcu-5.1.8 && \
+	phpize && \
+	./configure --enable-memcache && \
+	make && make install && \
+	echo 'extension=apcu.so' > "${php_ini_dir}/35_apcu.ini"
+
+# Build & install php_redis (Alpine PHP7_redis is built to out of date php7 backend)
+RUN cd /tmp && \
+	git clone https://github.com/nrk/phpiredis.git phpiredis && \
+	cd phpiredis && \
+	phpize && \
+	./configure && \
+	make && make install && \
+	echo 'extension=phpiredis.so' > "${php_ini_dir}/33-phpiredis.ini" && \
+	cd /tmp && \
+	rm -rf phpiredis
+
+# Build & install php7_memcache (Alpine Package does not exists at this time - source from pecl is blocking)
+RUN cd /tmp && \
+	curl -fsSL 'https://github.com/websupport-sk/pecl-memcache/archive/NON_BLOCKING_IO_php7.zip' \
+	--output /tmp/memcache.zip && \
+	unzip memcache.zip && \
+	cd /tmp/pecl-memcache-NON_BLOCKING_IO_php7 && \
+	phpize && \
+	./configure --enable-memcache && \
+	make && make install && \
+	echo 'extension=memcache.so' > "${php_ini_dir}/35_memcache.ini"
 
 # Clean up the apk cache and tmp just in case
 RUN rm -rf /var/cache/apk/* && \
