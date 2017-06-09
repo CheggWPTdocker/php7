@@ -1,5 +1,5 @@
 NAME = cheggwpt/php7
-VERSION = 1.1.4
+VERSION = 1.1.6
 
 .PHONY: all build test tag_latest release ssh
 

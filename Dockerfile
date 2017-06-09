@@ -1,5 +1,5 @@
-FROM alpine:edge
-# FROM alpine:3.4
+# FROM alpine:edge
+FROM alpine:3.5
 MAINTAINER jgilley@chegg.com
 
 # set our environment
@@ -55,6 +55,7 @@ RUN apk add \
 		php7-mcrypt \
 		php7-mysqli \
 		php7-openssl \
+		php7-opcache \
 		php7-pdo \
 		php7-pdo_dblib \
 		php7-pdo_mysql \
@@ -99,6 +100,11 @@ RUN	sed -i -e 's/;cgi.fix_pathinfo=1/cgi.fix_pathinfo=0/g' /etc/php7/php.ini && 
 RUN mkdir -p /run/php && \
 	chown -R www-data:www-data /run/php
 
+RUN ln -s /usr/bin/php-config7 /usr/bin/php-config && \
+	ln -s /usr/bin/php-fpm7  /usr/bin/php-fpm && \
+	ln -s /usr/bin/php7  /usr/bin/php && \
+	ln -s /usr/bin/phpize7 /usr/bin/phpize
+
 #
 # BUILD PHP Extensions that are missing or out of date in alpine edge
 #
@@ -106,16 +112,16 @@ RUN mkdir -p /run/php && \
 # Build & install ext/tideways & Tideways.php (props to till)
 RUN cd /tmp && \
 	curl -L "${tideways_dl}/php-profiler-extension/archive/v${tideways_ext_version}.zip" \
-    --output "/tmp/v${tideways_ext_version}.zip" && \
+	--output "/tmp/v${tideways_ext_version}.zip" && \
 	cd /tmp && unzip "v${tideways_ext_version}.zip" && \
 	cd "php-profiler-extension-${tideways_ext_version}" && \
 	phpize && \
 	./configure && \
 	make && make install && \
 	echo 'extension=tideways.so' > "${php_ini_dir}/22_tideways.ini" && \
-    curl -L "${tideways_dl}/profiler/releases/download/v${tideways_php_version}/Tideways.php" \
+	curl -L "${tideways_dl}/profiler/releases/download/v${tideways_php_version}/Tideways.php" \
 	--output "$(php-config --extension-dir)/Tideways.php" && \
-    ls -l "$(php-config --extension-dir)/Tideways.php"
+	ls -l "$(php-config --extension-dir)/Tideways.php"
 
 # Build & install php7_apcu (Alpine PHP7_apcu is built to out of date php7 backend)
 RUN cd /tmp && \
@@ -160,15 +166,15 @@ RUN cd /tmp && \
 	echo 'extension=memcached.so' > "${php_ini_dir}/35_memcached.ini"
 
 # Build & install php7_memcache (Alpine Package does not exists at this time - source from pecl is blocking)
-# RUN cd /tmp && \
-#	curl -fsSL 'https://github.com/websupport-sk/pecl-memcache/archive/NON_BLOCKING_IO_php7.zip' \
-#	--output /tmp/memcache.zip && \
-#	unzip memcache.zip && \
-#	cd /tmp/pecl-memcache-NON_BLOCKING_IO_php7 && \
-#	phpize && \
-#	./configure --enable-memcache && \
-#	make && make install && \
-#	echo 'extension=memcache.so' > "${php_ini_dir}/35_memcache.ini"
+RUN cd /tmp && \
+	curl -fsSL 'https://github.com/websupport-sk/pecl-memcache/archive/NON_BLOCKING_IO_php7.zip' \
+	--output /tmp/memcache.zip && \
+	unzip memcache.zip && \
+	cd /tmp/pecl-memcache-NON_BLOCKING_IO_php7 && \
+	phpize && \
+	./configure --enable-memcache && \
+	make && make install && \
+	echo 'extension=memcache.so' > "${php_ini_dir}/35_memcache.ini"
 
 # dump some build done info on PHP
 RUN php -m && php --ini
