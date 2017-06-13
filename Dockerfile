@@ -10,6 +10,10 @@ ENV tideways_ext_version 4.0.7
 ENV tideways_php_version 2.0.14
 ENV tideways_dl https://github.com/tideways/
 
+ENV PHP_OC_ENABLE 0
+ENV PHP_OC_ENABLE_CLI 0
+ENV PHP_OC_VALIDATE_TIMESTAMPS 1
+ENV PHP_OC_MEMORY_CONSUMPTION 64
 
 # if edge libraries are needed use the following:
 RUN echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories
